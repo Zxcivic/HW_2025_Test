@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
-
 public class GameManager : MonoBehaviour
 {
     public DoofusDiary diary;
     public Pulpit lastPulpit;
     public DoofusController doofusController;
-
 
     public string diaryUrl = "https://s3.ap-south-1.amazonaws.com/superstars.assetbundles.testbuild/doofus_game/doofus_diary.json";
     public GameObject doofus;
@@ -19,12 +17,29 @@ public class GameManager : MonoBehaviour
     public float maxTime;
     public float spawnTriggerTime;
     public float stepSize = 9f;
-    public int score = 0;
 
+    public int score = 0;
     public List<Pulpit> activePulpits = new List<Pulpit>();
+
+    public GameObject gameOverPanel;
+    public float gameOverFadeDuration = 1f;
+
+    bool isGameRunning = false;
+    bool isGameOver = false;
+    public int highScore = 0;
+    public GameObject winPanel;
+
 
     void Start()
     {
+        highScore = PlayerPrefs.GetInt("HighScore", 0);
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(false);
+            var cg = gameOverPanel.GetComponent<CanvasGroup>();
+            if (cg != null) cg.alpha = 0f;
+        }
+
         StartCoroutine(LoadDiaryAndStart());
     }
 
@@ -45,11 +60,43 @@ public class GameManager : MonoBehaviour
         maxTime = diary.pulpit_data.max_pulpit_destroy_time;
         spawnTriggerTime = diary.pulpit_data.pulpit_spawn_time;
 
-        var controller = doofus.GetComponent<DoofusController>();
-        controller.gm = this;
-        controller.speed = diary.player_data.speed;
+        doofusController = doofus.GetComponent<DoofusController>();
+        doofusController.gm = this;
+        doofusController.speed = diary.player_data.speed;
+
+        StartGame();
+    }
+
+    public void StartGame()
+    {
+        isGameOver = false;
+        isGameRunning = false;
+
+        foreach (var p in activePulpits)
+        {
+            if (p != null) Destroy(p.gameObject);
+        }
+        activePulpits.Clear();
+
+        score = 0;
+        if (UIManager.Instance != null)
+            UIManager.Instance.SetScore(score);
+
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(false);
+            var cg = gameOverPanel.GetComponent<CanvasGroup>();
+            if (cg != null) cg.alpha = 0f;
+        }
+
+        if (doofusController == null)
+            doofusController = doofus.GetComponent<DoofusController>();
+
+        doofusController.enabled = true;
 
         SpawnInitialPulpit();
+
+        isGameRunning = true;
     }
 
     void SpawnInitialPulpit()
@@ -65,14 +112,15 @@ public class GameManager : MonoBehaviour
         lastPulpit = p;
 
         doofus.transform.position = pos + Vector3.up * 1.5f;
-        var ctrl = doofus.GetComponent<DoofusController>();
-        ctrl.SetCurrentPulpit(p);
-        UIManager.Instance.SetScore(score);
-    }
+        doofusController.SetCurrentPulpit(p);
 
+        if (UIManager.Instance != null)
+            UIManager.Instance.SetScore(score);
+    }
 
     public void OnPulpitThresholdReached(Pulpit source)
     {
+        if (!isGameRunning) return;
         if (source != lastPulpit) return;
 
         Vector3 newPos = GetAdjacentPosition(source.gridPos);
@@ -86,7 +134,6 @@ public class GameManager : MonoBehaviour
         lastPulpit = p;
     }
 
-
     Vector3 GetAdjacentPosition(Vector3 from)
     {
         Vector3[] dirs =
@@ -94,6 +141,7 @@ public class GameManager : MonoBehaviour
             new Vector3(stepSize, 0, 0),
             new Vector3(-stepSize, 0, 0),
             new Vector3(0, 0, stepSize),
+            new Vector3(-stepSize, 0, 0),
             new Vector3(0, 0, -stepSize)
         };
 
@@ -105,7 +153,7 @@ public class GameManager : MonoBehaviour
             if (!occupied) candidates.Add(pos);
         }
 
-        if (candidates.Count == 0) return from + dirs[0];
+        if (candidates.Count == 0) return from + new Vector3(stepSize, 0, 0);
         return candidates[Random.Range(0, candidates.Count)];
     }
 
@@ -113,35 +161,127 @@ public class GameManager : MonoBehaviour
     {
         activePulpits.Remove(p);
 
-        if (doofusController.currentPulpit == p)
+        if (!isGameRunning || isGameOver) return;
+
+        if (doofusController != null && doofusController.currentPulpit == p)
         {
             Debug.Log("Game Over: pulpit under Doofus destroyed");
+            GameOver();
+        }
+    }
+    void GameWin()
+    {
+        if (isGameOver) return;
+        isGameOver = true;
+        isGameRunning = false;
+
+        if (doofusController != null)
+            doofusController.enabled = false;
+
+        Debug.Log("YOU WIN! Score: " + score);
+        SaveHighScore();
+        if (winPanel != null)
+            StartCoroutine(FadeInWin());
+        StartCoroutine(ReturnToMainMenu());
+    }
+    IEnumerator FadeInWin()
+    {
+        winPanel.SetActive(true);
+        CanvasGroup cg = winPanel.GetComponent<CanvasGroup>();
+        if (cg == null) yield break;
+
+        cg.alpha = 0f;
+        float t = 0f;
+
+        while (t < gameOverFadeDuration)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / gameOverFadeDuration);
+            cg.alpha = k;
+            yield return null;
         }
     }
 
 
     public void OnPulpitStepped(Pulpit p)
     {
+        if (!isGameRunning || isGameOver) return;
+
         Debug.Log("Stepped on pulpit at " + p.gridPos);
         score++;
-        UIManager.Instance.SetScore(score);
+        if (UIManager.Instance != null)
+            UIManager.Instance.SetScore(score);
+        if (score >= 50)
+        {
+            GameWin();
+        }
     }
 
     public void OnDoofusFell()
     {
+        if (!isGameRunning || isGameOver) return;
+
         Debug.Log("Game Over: Doofus fell off");
+        GameOver();
     }
-    public void StartGame()
+    IEnumerator ReturnToMainMenu()
     {
-        minTime = diary.pulpit_data.min_pulpit_destroy_time;
-        maxTime = diary.pulpit_data.max_pulpit_destroy_time;
-        spawnTriggerTime = diary.pulpit_data.pulpit_spawn_time;
+        yield return new WaitForSeconds(3f);  // pause before leaving the game
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+    }
 
-        var controller = doofus.GetComponent<DoofusController>();
-        controller.speed = diary.player_data.speed;
-        controller.gm = this;
 
-        SpawnInitialPulpit();
+    void GameOver()
+    {
+        if (isGameOver) return;
+        isGameOver = true;
+        isGameRunning = false;
+
+        if (doofusController != null)
+            doofusController.enabled = false;
+
+        if (gameOverPanel != null)
+            StartCoroutine(FadeInGameOver());
+
+        SaveHighScore();
+        Debug.Log("Game Over. Score = " + score + " | HighScore = " + highScore);
+
+        StartCoroutine(ReturnToMainMenu());
+    }
+
+
+    IEnumerator FadeInGameOver()
+    {
+        gameOverPanel.SetActive(true);
+        CanvasGroup cg = gameOverPanel.GetComponent<CanvasGroup>();
+        if (cg == null) yield break;
+
+        cg.alpha = 0f;
+        float t = 0f;
+
+        while (t < gameOverFadeDuration)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / gameOverFadeDuration);
+            cg.alpha = k;
+            yield return null;
+        }
+    }
+    void SaveHighScore()
+    {
+        int previousHigh = PlayerPrefs.GetInt("HighScore", 0);
+
+        if (score > previousHigh)
+        {
+            highScore = score;
+            PlayerPrefs.SetInt("HighScore", highScore);
+            PlayerPrefs.Save();
+            Debug.Log("New High Score Saved: " + highScore);
+        }
+        else
+        {
+            Debug.Log("No new high score. Existing: " + previousHigh + ", Current: " + score);
+        }
     }
 
 }

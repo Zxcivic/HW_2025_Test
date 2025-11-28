@@ -40,6 +40,7 @@ public class DoofusController : MonoBehaviour
 
     void DetectPulpit()
     {
+        if (gm == null) return;
         Ray ray = new Ray(transform.position, Vector3.down);
 
         if (Physics.Raycast(ray, out RaycastHit hit, rayDistance))
