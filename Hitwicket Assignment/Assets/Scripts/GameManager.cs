@@ -28,6 +28,8 @@ public class GameManager : MonoBehaviour
     bool isGameOver = false;
     public int highScore = 0;
     public GameObject winPanel;
+    public float fallYThreshold = -5f;
+
 
 
     void Start()
@@ -281,6 +283,15 @@ public class GameManager : MonoBehaviour
         else
         {
             Debug.Log("No new high score. Existing: " + previousHigh + ", Current: " + score);
+        }
+    }
+    void Update()
+    {
+        if (!isGameRunning || isGameOver) return;
+
+        if (doofus != null && doofus.transform.position.y < fallYThreshold)
+        {
+            OnDoofusFell();
         }
     }
 
