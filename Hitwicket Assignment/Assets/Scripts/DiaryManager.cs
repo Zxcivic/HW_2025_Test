@@ -24,12 +24,11 @@ public class DiaryManager : MonoBehaviour
         }
 
         DoofusDiary diary = JsonUtility.FromJson<DoofusDiary>(request.downloadHandler.text);
-        gameManager.diary = diary;     // directly assign
+        gameManager.diary = diary;
         gameManager.StartGame();
         Debug.Log("Speed = " + diary.player_data.speed);
         Debug.Log("Min Time = " + diary.pulpit_data.min_pulpit_destroy_time);
         Debug.Log("Max Time = " + diary.pulpit_data.max_pulpit_destroy_time);
         Debug.Log("Spawn Time = " + diary.pulpit_data.pulpit_spawn_time);
-        // start immediately
     }
 }

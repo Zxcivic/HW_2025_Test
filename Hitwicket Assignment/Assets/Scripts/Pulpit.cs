@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 
 public class Pulpit : MonoBehaviour
 {
@@ -7,6 +8,8 @@ public class Pulpit : MonoBehaviour
     public float spawnTriggerTime;
     public bool spawnTriggered;
     public Vector3 gridPos;
+
+    public TextMeshPro timerText;
 
     float elapsed;
 
@@ -18,11 +21,19 @@ public class Pulpit : MonoBehaviour
         spawnTriggerTime = triggerTime;
         elapsed = 0f;
         spawnTriggered = false;
+
+        UpdateTimerText();
+        if (timerText == null)
+        {
+            Debug.LogWarning("Pulpit at " + pos + " has no timerText assigned!");
+        }
     }
 
     void Update()
     {
         elapsed += Time.deltaTime;
+
+        UpdateTimerText();
 
         if (!spawnTriggered && elapsed >= spawnTriggerTime)
         {
@@ -35,5 +46,12 @@ public class Pulpit : MonoBehaviour
             gm.OnPulpitExpired(this);
             Destroy(gameObject);
         }
+    }
+
+    void UpdateTimerText()
+    {
+
+        float remaining = Mathf.Max(0f, lifetime - elapsed);
+        timerText.text = remaining.ToString("0.0") + "s";
     }
 }

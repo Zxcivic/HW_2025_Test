@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
     public float maxTime;
     public float spawnTriggerTime;
     public float stepSize = 9f;
+    public int score = 0;
 
     public List<Pulpit> activePulpits = new List<Pulpit>();
 
@@ -66,6 +67,7 @@ public class GameManager : MonoBehaviour
         doofus.transform.position = pos + Vector3.up * 1.5f;
         var ctrl = doofus.GetComponent<DoofusController>();
         ctrl.SetCurrentPulpit(p);
+        UIManager.Instance.SetScore(score);
     }
 
 
@@ -121,6 +123,8 @@ public class GameManager : MonoBehaviour
     public void OnPulpitStepped(Pulpit p)
     {
         Debug.Log("Stepped on pulpit at " + p.gridPos);
+        score++;
+        UIManager.Instance.SetScore(score);
     }
 
     public void OnDoofusFell()
