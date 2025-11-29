@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using System.Collections.Generic;
+
 
 public class GameManager : MonoBehaviour
 {
@@ -20,6 +22,8 @@ public class GameManager : MonoBehaviour
 
     public int score = 0;
     public List<Pulpit> activePulpits = new List<Pulpit>();
+    HashSet<Pulpit> visitedPulpits = new HashSet<Pulpit>();
+
 
     public GameObject gameOverPanel;
     public float gameOverFadeDuration = 1f;
@@ -75,6 +79,10 @@ public class GameManager : MonoBehaviour
 
     public void StartGame()
     {
+        visitedPulpits.Clear();
+        score = 0;
+        UIManager.Instance.SetScore(score);
+
         isGameOver = false;
         isGameRunning = false;
 
@@ -222,6 +230,9 @@ public class GameManager : MonoBehaviour
         if (!isGameRunning || isGameOver) return;
 
         Debug.Log("Stepped on pulpit at " + p.gridPos);
+        if (visitedPulpits.Contains(p)) return;
+
+        visitedPulpits.Add(p);
         score++;
         if (UIManager.Instance != null)
             UIManager.Instance.SetScore(score);
