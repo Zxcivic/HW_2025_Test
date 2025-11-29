@@ -29,6 +29,10 @@ public class GameManager : MonoBehaviour
     public int highScore = 0;
     public GameObject winPanel;
     public float fallYThreshold = -5f;
+    public AudioSource uiAudioSource;
+    public AudioClip youDiedClip;
+    public AudioClip youWinClip;
+
 
 
 
@@ -180,12 +184,20 @@ public class GameManager : MonoBehaviour
         if (doofusController != null)
             doofusController.enabled = false;
 
-        Debug.Log("YOU WIN! Score: " + score);
         SaveHighScore();
+
+        if (BGMManager.Instance != null)
+            BGMManager.Instance.PauseMusic();
+
+        if (uiAudioSource != null && youWinClip != null)
+            uiAudioSource.PlayOneShot(youWinClip);
+
         if (winPanel != null)
             StartCoroutine(FadeInWin());
-        StartCoroutine(ReturnToMainMenu());
+
+        StartCoroutine(ReturnToMainMenu(4f));
     }
+
     IEnumerator FadeInWin()
     {
         winPanel.SetActive(true);
@@ -226,9 +238,9 @@ public class GameManager : MonoBehaviour
         Debug.Log("Game Over: Doofus fell off");
         GameOver();
     }
-    IEnumerator ReturnToMainMenu()
+    IEnumerator ReturnToMainMenu(float delay)
     {
-        yield return new WaitForSeconds(3f);  // pause before leaving the game
+        yield return new WaitForSeconds(delay);  // pause before leaving the game
         UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 
@@ -242,14 +254,18 @@ public class GameManager : MonoBehaviour
         if (doofusController != null)
             doofusController.enabled = false;
 
+        if (BGMManager.Instance != null)
+            BGMManager.Instance.PauseMusic();
+
+        if (uiAudioSource != null && youDiedClip != null)
+            uiAudioSource.PlayOneShot(youDiedClip);
+
         if (gameOverPanel != null)
             StartCoroutine(FadeInGameOver());
 
-        SaveHighScore();
-        Debug.Log("Game Over. Score = " + score + " | HighScore = " + highScore);
-
-        StartCoroutine(ReturnToMainMenu());
+        StartCoroutine(ReturnToMainMenu(7f));
     }
+
 
 
     IEnumerator FadeInGameOver()

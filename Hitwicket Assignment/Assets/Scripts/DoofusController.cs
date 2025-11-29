@@ -10,11 +10,10 @@ public class DoofusController : MonoBehaviour
     public float jumpForce = 7f;
     public float groundCheckDistance = 1.5f;
 
-    [Header("Audio")]
-    public AudioSource walkSource;      // looping walking sound
-    public AudioSource sfxSource;       // jump / other SFX
+    public AudioSource walkSource;
+    public AudioSource sfxSource;
     public AudioClip jumpClip;
-    public float walkFadeSpeed = 5f;    // higher = faster fade
+    public float walkFadeSpeed = 5f;
 
     Rigidbody rb;
     Vector3 input;
@@ -24,8 +23,6 @@ public class DoofusController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         if (gm == null) gm = FindObjectOfType<GameManager>();
-
-        // Optional safety: try auto-assign if not set
         if (walkSource == null || sfxSource == null)
         {
             var sources = GetComponents<AudioSource>();
@@ -45,9 +42,7 @@ public class DoofusController : MonoBehaviour
         HandleWalkAudio();
 
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
-        {
             Jump();
-        }
     }
 
     void FixedUpdate()
@@ -94,17 +89,10 @@ public class DoofusController : MonoBehaviour
     {
         if (walkSource == null) return;
 
-        // Should we be playing walking sound?
-        bool shouldWalk =
-            isGrounded &&
-            input.sqrMagnitude > 0.01f;   // has movement input
-
+        bool shouldWalk = isGrounded && input.sqrMagnitude > 0.01f;
         float targetVol = shouldWalk ? 1f : 0f;
-        walkSource.volume = Mathf.MoveTowards(
-            walkSource.volume,
-            targetVol,
-            walkFadeSpeed * Time.deltaTime
-        );
+
+        walkSource.volume = Mathf.MoveTowards(walkSource.volume, targetVol, walkFadeSpeed * Time.deltaTime);
 
         if (shouldWalk)
         {
@@ -113,7 +101,6 @@ public class DoofusController : MonoBehaviour
         }
         else
         {
-            // fully faded out -> pause so it doesn't keep reading
             if (walkSource.volume <= 0.001f && walkSource.isPlaying)
                 walkSource.Pause();
         }
@@ -126,8 +113,6 @@ public class DoofusController : MonoBehaviour
         rb.linearVelocity = v;
 
         if (sfxSource != null && jumpClip != null)
-        {
             sfxSource.PlayOneShot(jumpClip);
-        }
     }
 }

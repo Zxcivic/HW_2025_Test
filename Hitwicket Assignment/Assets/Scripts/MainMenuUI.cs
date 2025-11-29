@@ -9,6 +9,8 @@ public class MainMenuUI : MonoBehaviour
 
     void Start()
     {
+        if (BGMManager.Instance != null)
+            BGMManager.Instance.ResumeMusic();
         int highScore = PlayerPrefs.GetInt("HighScore", 0);
         Debug.Log("[MainMenuUI] Loaded HighScore = " + highScore);
 
