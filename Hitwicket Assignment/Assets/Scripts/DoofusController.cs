@@ -35,11 +35,6 @@ public class DoofusController : MonoBehaviour
             {
                 Jump();
             }
-            else
-            {
-                // Uncomment for debugging:
-                // Debug.Log("Tried to jump but not grounded");
-            }
         }
     }
 
@@ -80,7 +75,6 @@ public class DoofusController : MonoBehaviour
         else
         {
             currentPulpit = null;
-            // IMPORTANT: no OnDoofusFell() here – falling is handled by GameManager via Y position
         }
     }
 
